@@ -1,0 +1,341 @@
+:root {
+  --bg-dark: #1e1e1e;
+  --ui-panel: #2d2d2d;
+  --accent: #0078d4;
+  --text: #e0e0e0;
+  --border: #444;
+  --panel-width: 300px;
+  --highlight: #f1c40f;
+}
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-dark);
+  color: var(--text);
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Top Menu Bar */
+#top-menu {
+  background: #333;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  padding: 0 5px;
+  border-bottom: 1px solid var(--border);
+  z-index: 1001;
+}
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropbtn {
+  background: none;
+  border: none;
+  color: white;
+  padding: 8px 15px;
+  font-size: 13px;
+  cursor: pointer;
+  height: 35px;
+}
+.dropbtn:hover {
+  background: #444;
+}
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #2d2d2d;
+  min-width: 180px;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.5);
+  z-index: 1005;
+  border: 1px solid #444;
+}
+.dropdown-content div {
+  color: white;
+  padding: 10px 15px;
+  display: block;
+  font-size: 13px;
+  cursor: pointer;
+}
+.dropdown-content div:hover {
+  background-color: var(--accent);
+}
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+/* Main Workspace */
+#main-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+#toolbar-left {
+  width: 55px;
+  background: var(--ui-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 15px;
+  gap: 12px;
+  z-index: 10;
+}
+.tool-icon {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 18px;
+  transition: 0.2s;
+  border: 1px solid transparent;
+}
+.tool-icon:hover {
+  background: #444;
+}
+.tool-icon.active {
+  background: var(--accent);
+  border-color: #555;
+}
+.tool-sep {
+  width: 30px;
+  height: 1px;
+  background: #444;
+  margin: 5px 0;
+}
+
+#canvas-wrapper {
+  flex: 1;
+  position: relative;
+  background: #1a1a1a;
+  overflow: hidden;
+}
+canvas {
+  display: block;
+  cursor: crosshair;
+  outline: none;
+}
+
+/* Right Inspector */
+#inspector-right {
+  width: var(--panel-width);
+  background: var(--ui-panel);
+  border-left: 1px solid var(--border);
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+.inspector-section {
+  margin-bottom: 25px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 5px;
+}
+.inspector-section.active-pt {
+  border-color: var(--highlight);
+  background: rgba(241, 196, 15, 0.05);
+}
+.inspector-section h4 {
+  margin: 0 0 12px 0;
+  color: #888;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+}
+h4 {
+  margin: 20px 0 12px 0;
+  color: #888;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.prop-group {
+  margin-bottom: 12px;
+}
+label {
+  display: block;
+  font-size: 11px;
+  color: #aaa;
+  margin-bottom: 5px;
+}
+input[type="number"],
+select {
+  width: 100%;
+  background: #111;
+  color: #0f0;
+  border: 1px solid #444;
+  padding: 8px;
+  border-radius: 4px;
+  font-family: "Consolas", monospace;
+  box-sizing: border-box;
+}
+.empty-state {
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  margin-top: 60px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Status Bar */
+#status-bar {
+  background: #252525;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  gap: 15px;
+  border-top: 1px solid #444;
+  font-size: 12px;
+}
+.zoom-btn {
+  background: #444;
+  border: none;
+  color: white;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+/* Modals */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+.modal {
+  background: #2d2d2d;
+  padding: 25px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 550px;
+  border: 1px solid #555;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Length Lock Toggle Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 18px;
+  margin-left: 10px;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #444;
+  transition: 0.4s;
+  border-radius: 20px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: var(--accent);
+}
+input:checked + .slider:before {
+  transform: translateX(16px);
+}
+
+.accordion-container h4:hover {
+  background-color: #444 !important;
+  color: #fff !important;
+}
+
+.context-menu {
+  position: absolute;
+  background: #2d2d2d;
+  border: 1px solid #444;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+  z-index: 2000;
+  min-width: 180px;
+  padding: 5px 0;
+}
+
+.menu-item {
+  padding: 10px 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #e0e0e0;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.menu-item:hover {
+  background: #0078d4;
+  color: white;
+}
+
+.menu-item .icon {
+  margin-right: 12px;
+  width: 20px;
+  text-align: center;
+}
+
+.menu-item .shortcut {
+  margin-left: auto;
+  color: #888;
+  font-size: 11px;
+  padding-left: 20px;
+}
+
+.menu-item:hover .shortcut {
+  color: #cce5ff;
+}
+
+.menu-item hr {
+  border: 0;
+  border-top: 1px solid #444;
+  margin: 5px 0;
+}
+
+.delete-item:hover {
+  background: #d13438 !important;
+}

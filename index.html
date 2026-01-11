@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>TinyCAD Web - V12.1</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div id="top-menu">
+      <div class="dropdown">
+        <button class="dropbtn">File</button>
+        <div class="dropdown-content">
+          <div onclick="document.getElementById('importFile').click()">Import JSON</div>
+          <div onclick="showExportModal()">Export As...</div>
+          <div onclick="deleteProject()" style="color:#ff6b6b">Delete Project</div>
+        </div>
+      </div>
+      <div class="dropdown">
+        <button class="dropbtn">UOM</button>
+        <div class="dropdown-content">
+          <div style="padding: 5px 15px; color: #777; font-size: 11px; text-transform: uppercase;">Select Measurement Unit</div>
+          <div onclick="changeUnit('mm')">Millimeters (mm)</div>
+          <div onclick="changeUnit('cm')">Centimeters (cm)</div>
+          <div onclick="changeUnit('m')">Meters (m)</div>
+          <div onclick="changeUnit('in')">Inches (in)</div>
+        </div>
+      </div>
+      <div class="dropdown">
+        <button class="dropbtn">Support</button>
+        <div class="dropdown-content">
+          <div onclick="showGuide()">Shortcuts</div>
+          <a href="documentation.html" target="_blank" style="text-decoration:none;">
+            <div>Technical Documentation</div>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div id="main-container">
+      <div id="toolbar-left">
+        <div class="tool-icon active" id="line-tool" onclick="setTool('line')" title="Line Tool (L)">✎𓂃</div>
+        <div class="tool-icon" id="select-tool" onclick="setTool('select')" title="Selection Tool (V)">✎</div>
+        <div class="tool-icon" id="window-tool" onclick="setTool('window')" title="Window Tool (W)">⊞</div>
+        <div class="tool-icon" id="door-tool" onclick="setTool('door')" title="Door Tool (D)">⍈</div>
+        <div class="tool-sep"></div>
+        <div class="tool-icon" onclick="undo()" title="Undo (Ctrl+Z)">↩</div>
+        <div class="tool-icon" onclick="redo()" title="Redo (Ctrl+Y)">↪</div>
+        <div class="tool-sep"></div>
+        <div class="tool-icon" onclick="deleteLine()" title="Delete Selected (Del)">✖</div>
+      </div>
+      <div id="canvas-wrapper">
+        <canvas id="cadCanvas" tabindex="1"></canvas>
+      </div>
+      <div id="inspector-right">
+        <div id="inspector-content">
+          <div class="empty-state">Select a line to view <br>and edit properties </div>
+        </div>
+        <div class="accordion-container">
+          <h4 onclick="toggleParametric()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:#383838; padding:8px; border-radius:4px;"> Parametric Generation <span id="para-chevron">▶</span>
+          </h4>
+          <div id="para-content" style="display:none; padding-top:10px;">
+            <label style="font-size:10px; margin-bottom:10px; display:block; color:#888;"> Draw a calibration line first, then enter commands below. Parametric drawing will start from the end point of last drawn line. <br> ⬆️ = N | U <br> ⬇️ = S | D <br> ➡️ = E | R <br> ⬅️ = W | L </label>
+            <textarea id="para-input" style="width:100%; height:120px; background:#111; color:#0f0; border:1px solid #27ae60; font-family:monospace; margin-bottom:10px;" placeholder="N100&#10;E50&#10;S100&#10;W50"></textarea>
+            <button onclick="processParametricToJSON()" style="width:100%; padding:10px; background:#27ae60; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;"> Generate drawing </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="status-bar">
+      <button class="zoom-btn" onclick="zoomOut()">-</button>
+      <span id="zoom-text">100%</span>
+      <button class="zoom-btn" onclick="zoomIn()">+</button>
+      <span id="scale-status" style="margin-left: 20px; color: #f1c40f;">Unit: CM</span>
+      <span style="margin-left: 20px; color: #3498db;">Snap: Active</span>
+    </div>
+    <div id="exportModal" class="modal-overlay">
+      <div class="modal">
+        <h3>Export Configuration</h3>
+        <div class="prop-group">
+          <label>Format</label>
+          <select id="expFormat" onchange="toggleExportOptions()">
+            <option value="png">PNG (Raster Image)</option>
+            <option value="svg">SVG (Vector Graphics)</option>
+            <option value="json">JSON (Project Data)</option>
+            <option value="dxf">DXF (AutoCAD Interchange)</option>
+          </select>
+        </div>
+        <div id="visualExportOptions">
+          <div class="prop-group">
+            <label>Background Color</label>
+            <select id="expBG">
+              <option value="#1a1a1a">Dark (Canvas Default)</option>
+              <option value="#ffffff">White (Print Ready)</option>
+              <option value="transparent">Transparent</option>
+            </select>
+          </div>
+          <div class="prop-group">
+            <label>Measurement Text Size</label>
+            <select id="expFontSize">
+              <option value="12">Small (12px)</option>
+              <option value="20" selected>Medium (20px)</option>
+              <option value="32">Large (32px)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px">
+          <button class="dropbtn" style="flex:1; background:var(--accent); border-radius:4px;" onclick="processExport()">Download</button>
+          <button class="dropbtn" style="flex:1; background:#555; border-radius:4px;" onclick="closeModal('exportModal')">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div id="calibModal" class="modal-overlay">
+      <div class="modal">
+        <h3>Scale Calibration</h3>
+        <p>Real length of this line in <b id="current-calib-unit">CM</b>: </p>
+        <input type="number" id="calib-val" value="10">
+        <button class="dropbtn" style="width:100%; margin-top:20px; background:var(--accent); border-radius:4px;" onclick="applyCalibration()">Apply Scale</button>
+      </div>
+    </div>
+    <div id="guideModal" class="modal-overlay">
+      <div class="modal">
+        <h2 style="color:var(--accent)">Keyboard Shortcuts</h2>
+        <p>
+          <b>L:</b> Line Tool
+        </p>
+        <p>
+          <b>V:</b> Selection Tool
+        </p>
+        <p>
+          <b>W:</b> Window Tool
+        </p>
+        <p>
+          <b>D:</b> Door Tool
+        </p>
+        <p>
+          <b>SHIFT:</b> Ortho-Lock (Straight Lines)
+        </p>
+        <p>
+          <b>Del:</b> Delete Selected
+        </p>
+        <p>
+          <b>CTRL+Z:</b> Undo (30 steps)
+        </p>
+        <p>
+          <b>CTRL+Y:</b> Redo (30 steps)
+        </p>
+        <button class="dropbtn" style="width:100%; margin-top:15px; background:var(--accent); border-radius:4px;" onclick="closeModal('guideModal')">Close</button>
+      </div>
+    </div>
+    <input type="file" id="importFile" style="display:none" onchange="handleFileImport(event)">
+    <div id="contextMenu" class="context-menu" style="display:none;">
+      <div class="menu-item" onclick="setTool('line')">
+        <span class="icon">✎𓂃</span> Line Tool <span class="shortcut">L</span>
+      </div>
+      <div class="menu-item" onclick="setTool('select')">
+        <span class="icon">✎</span> Select Tool <span class="shortcut">V</span>
+      </div>
+      <div class="menu-item" onclick="setTool('window')">
+        <span class="icon">⊞</span> Window Tool <span class="shortcut">W</span>
+      </div>
+      <div class="menu-item" onclick="setTool('door')">
+        <span class="icon">⍈</span> Door Tool <span class="shortcut">D</span>
+      </div>
+      <hr>
+      <div class="menu-item delete-item" onclick="deleteSelected()">
+        <span class="icon">✖</span> Delete <span class="shortcut">Del</span>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
