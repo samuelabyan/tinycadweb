@@ -8,6 +8,6 @@ Check out [TinyCAD Web](https://samuelabyan.github.io/tinycadweb/) | [Technical 
 Parametric generation has been renamed to “Angular Parametric” and now supports free-angle generation, as well as adding doors and windows through textual input.
 
 
-_Copyright (c) 2026 Samuel Abyan
+_Copyright (c) 2026 Samuel Abyan_
 
-Licensed under the MIT License._
+_Licensed under the MIT License._
