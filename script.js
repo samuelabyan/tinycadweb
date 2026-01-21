@@ -569,7 +569,7 @@ function processExport() {
     const fmt = document.getElementById('expFormat').value;
     const bg = document.getElementById('expBG').value;
     const fontSize = parseInt(document.getElementById('expFontSize').value);
-    const filename = 'gemini_cad_export';
+    const filename = 'tiny_cad_export';
     const bounds = getDrawingBoundaries();
 
     if (!bounds && fmt !== 'json') {
@@ -766,7 +766,7 @@ function processParametricToJSON() {
     let currentX = 0;
     let currentY = 0;
 
-    // If there are existing lines, start the parametric drawing from the END of the last line
+    // If there are existing lines, start from the END of the last line
     if (lines.length > 0) {
         currentX = lines[lines.length - 1].x2;
         currentY = lines[lines.length - 1].y2;
@@ -775,22 +775,30 @@ function processParametricToJSON() {
     let newLines = [];
 
     linesInput.forEach(line => {
-        let cmd = line.trim().toUpperCase();
-        if (!cmd) return;
+        let rawInput = line.trim().toUpperCase();
+        if (!rawInput) return;
 
-        let dir = cmd[0];
-        let rawVal = parseFloat(cmd.substring(1));
+        // Determine tool type based on suffix
+        let lineType = 'line';
+        if (rawInput.endsWith('-W')) {
+            lineType = 'window';
+            rawInput = rawInput.replace('-W', '');
+        } else if (rawInput.endsWith('-D')) {
+            lineType = 'door';
+            rawInput = rawInput.replace('-D', '');
+        }
+
+        let dir = rawInput[0];
+        let rawVal = parseFloat(rawInput.substring(1));
         if (isNaN(rawVal)) return;
 
-        // CONVERT REAL WORLD UNIT TO PIXELS
         let pixelVal = rawVal * scaleFactor;
-
         let startX = currentX;
         let startY = currentY;
         let endX = currentX;
         let endY = currentY;
 
-        // Support N/S/E/W and your requested L/R/U/D (Left, Right, Up, Down)
+        // Support N/S/E/W and U/D/R/L
         if (dir === 'N' || dir === 'U') endY -= pixelVal;
         else if (dir === 'S' || dir === 'D') endY += pixelVal;
         else if (dir === 'E' || dir === 'R') endX += pixelVal;
@@ -801,7 +809,9 @@ function processParametricToJSON() {
             y1: startY,
             x2: endX,
             y2: endY,
-            locked: false // New lines start unlocked
+            type: lineType, // Dynamically assigned
+            locked: false,
+            mirrored: false // Default for doors
         });
 
         currentX = endX;
@@ -814,9 +824,8 @@ function processParametricToJSON() {
         document.getElementById('para-input').value = "";
         draw();
         saveToStorage();
-        console.log("Parametric drawing generated using calibrated scale.");
     } else {
-        alert("Please enter valid commands (e.g., R1000, U800)");
+        alert("Please enter valid commands (e.g., E100, S50-w, W100-d)");
     }
 }
 
@@ -832,6 +841,99 @@ function toggleParametric() {
         content.style.display = "none";
         chevron.innerText = "▶";
         chevron.style.color = "#888";
+    }
+}
+// UI Control
+function showAddon(type) {
+    document.getElementById('angular-addon').style.display = (type === 'angular') ? 'block' : 'none';
+}
+
+
+
+document.getElementById('ang-para-input').addEventListener('input', () => {
+    if (document.getElementById('live-ang').checked) processAngularParametric(true);
+});
+
+let livePreviewLinesCount = 0;
+
+function processAngularParametric(isLive = false) {
+    const text = document.getElementById('ang-para-input').value;
+    const isAbsolute = document.getElementById('abs-ang').checked; // Check mode
+    const linesInput = text.split('\n');
+    const scaleFactor = baseCmPerPixel ? (1 / (baseCmPerPixel * unitTable[activeUnit])) : 1;
+
+    if (isLive && livePreviewLinesCount > 0) {
+        lines.splice(-livePreviewLinesCount);
+        livePreviewLinesCount = 0;
+    }
+
+    let currentX = 0;
+    let currentY = 0;
+    let currentHeadingRad = 0; 
+
+    if (lines.length > 0) {
+        const lastLine = lines[lines.length - 1];
+        currentX = lastLine.x2;
+        currentY = lastLine.y2;
+        
+        // Only set starting heading from last line if we are NOT using absolute angles
+        if (!isAbsolute) {
+            currentHeadingRad = Math.atan2(lastLine.y2 - lastLine.y1, lastLine.x2 - lastLine.x1);
+        }
+    }
+
+    let newLines = [];
+    
+    linesInput.forEach(lineStr => {
+        let raw = lineStr.trim().toLowerCase();
+        if (!raw) return;
+
+        let parts = raw.split('-');
+        let turnAngleDeg, rawDist, suffix;
+
+        if (raw.startsWith('-')) {
+            turnAngleDeg = parseFloat(parts[1]) * -1;
+            rawDist = parseFloat(parts[2]);
+            suffix = parts[3] || '';
+        } else {
+            turnAngleDeg = parseFloat(parts[0]);
+            rawDist = parseFloat(parts[1]);
+            suffix = parts[2] || '';
+        }
+        
+        if (isNaN(turnAngleDeg) || isNaN(rawDist)) return;
+
+        // LOGIC CHANGE:
+        // If Absolute: Set the heading directly to the input value
+        // If Relative: Add the input value to the current heading
+        if (isAbsolute) {
+            currentHeadingRad = (turnAngleDeg * Math.PI) / 180;
+        } else {
+            currentHeadingRad += (turnAngleDeg * Math.PI) / 180;
+        }
+
+        let pixelDist = rawDist * scaleFactor;
+        let endX = currentX + Math.cos(currentHeadingRad) * pixelDist;
+        let endY = currentY + Math.sin(currentHeadingRad) * pixelDist;
+
+        newLines.push({
+            x1: currentX, y1: currentY,
+            x2: endX, y2: endY,
+            type: suffix === 'w' ? 'window' : (suffix === 'd' ? 'door' : 'line'),
+            locked: false, mirrored: false
+        });
+
+        currentX = endX;
+        currentY = endY;
+    });
+
+    if (newLines.length > 0) {
+        if (!isLive) saveState();
+        lines = lines.concat(newLines);
+        livePreviewLinesCount = isLive ? newLines.length : 0;
+        draw();
+        saveToStorage();
+        if (!isLive) document.getElementById('ang-para-input').value = "";
     }
 }
 
@@ -965,9 +1067,15 @@ function showGuide() {
 }
 
 window.addEventListener('keydown', e => {
+    // NEW: If the user is typing in a text field, exit the function 
+    // so shortcuts don't trigger.
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return; 
+    }
+
+    // --- Existing shortcut logic below ---
     if (e.key === 'Shift') isShiftDown = true;
-    if (e.target.tagName === 'INPUT') return;
-    if (e.key === 'Delete' || e.key === 'Backspace') deleteLine();
+
     if (e.ctrlKey && e.key === 'z') {
         e.preventDefault();
         undo();
@@ -976,10 +1084,23 @@ window.addEventListener('keydown', e => {
         e.preventDefault();
         redo();
     }
+    
+    // Tool shortcuts
     if (e.key === 'l') setTool('line');
     if (e.key === 'v') setTool('select');
     if (e.key === 'd') setTool('door');
     if (e.key === 'w') setTool('window');
+
+    // Delete key logic
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (activeLine) {
+            saveState();
+            lines = lines.filter(l => l !== activeLine);
+            activeLine = null;
+            draw();
+            saveToStorage();
+        }
+    }
 });
 window.addEventListener('keyup', e => {
     if (e.key === 'Shift') isShiftDown = false;
