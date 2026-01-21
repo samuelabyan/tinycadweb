@@ -139,23 +139,23 @@
     <a href="#coordinate-systems">2. Coordinate Systems</a>
     <a href="#drawing-logic">3. Drawing & Snap Logic</a>
     <a href="#features">4. Architectural Features</a>
-    <a href="#parametric">5. Parametric Drafting</a>
+    <a href="#parametric">5. Angular Parametric Drafting</a>
     <a href="#export">6. Export Engine</a>
     <a href="#shortcuts">7. Shortcuts Reference</a>
 </nav>
 
 <main>
     <header>
-        <h1>TinyCAD <span style="font-size: 1rem; vertical-align: middle;">V12.1</span></h1>
+        <h1>TinyCAD <span style="font-size: 1rem; vertical-align: middle;">V2.1</span></h1>
         <p>Full Technical Specification and User Manual</p>
-        <span class="tag">Stable Release</span>
+        <span class="tag">Updated Release</span>
     </header>
 
     <section id="architecture">
         <h2>1. System Architecture</h2>
-        <p>TinyCAD is a browser-based simple application. It leverages the HTML5 Canvas API for direct-to-buffer rendering, avoiding the overhead of DOM-based geometry.</p>
+        <p>TinyCAD is a browser-based application leveraging the HTML5 Canvas API for direct-to-buffer rendering. It uses a global array to manage geometry and browser <code>localStorage</code> for state persistence.</p>
         <h3>The Object Model</h3>
-        <p>Every entity in the workspace is stored in the <code>lines[]</code> array. A standard entity schema includes:</p>
+        <p>Entities are stored in the <code>lines[]</code> array. A standard entity schema includes:</p>
         <pre>{
     x1, y1, x2, y2: number, // World coordinates
     type: "line" | "window" | "door",
@@ -166,79 +166,82 @@
 
     <section id="coordinate-systems">
         <h2>2. Coordinate Systems</h2>
-        <p>The application maintains a separation between <b>Screen Space</b> (the pixels on your monitor) and <b>World Space</b> (the actual CAD plane).</p>
+        <p>The application maintains a strict separation between <b>Screen Space</b> (pixels) and <b>World Space</b> (CAD plane).</p>
         <div class="math">
             $World_{pos} = \frac{Screen_{pos}}{Zoom} + Camera_{offset}$
         </div>
-        <p>This allow for infinite panning and zooming without losing coordinate precision. The <b>Axis Indicator</b> in the bottom right remains locked to screen space while accurately representing world-space orientations.</p>
-        
+        <p>This allows for infinite panning (Middle-Click) and zooming (Scroll Wheel) without losing precision.</p>
     </section>
 
     <section id="drawing-logic">
         <h2>3. Drawing & Snap Logic</h2>
         <h3>Vertex Snapping</h3>
-        <p>To ensure structural integrity, the engine performs a proximity check on every <code>mousedown</code> event. It calculates the Euclidean distance between the cursor and all existing vertices:</p>
+        <p>To ensure structural integrity, the engine performs a proximity check (<code>SNAP_DIST = 15</code>) on every mouse event. The engine calculates the Euclidean distance to determine if the cursor should "snap" to a vertex:</p>
         <div class="math">
             $d = \sqrt{(x_2-x_1)^2 + (y_2-y_1)^2}$
         </div>
-        <p>If $d < 15px$, the cursor "snaps" to the vertex, ensuring walls and doors connect perfectly.</p>
     </section>
 
     <section id="features">
         <h2>4. Architectural Features</h2>
         <h3>Window Rendering</h3>
-        <p>Windows are generated using a perpendicular offset. The engine calculates the angle of the base line and offsets two parallel lines to create the frame symbol.</p>
+        <p>Windows are rendered as double lines offset from the central vector. This creates a standard architectural representation within the vector space.</p>
         
-        
-        <h3>Door Flip/Mirror <span class="tag" style="background:var(--highlight); color: #000;">New</span></h3>
-        <p>The Mirror feature uses a mathematical sign-multiplier. When <code>mirrored</code> is toggled, the arc sweep and leaf rotation angles are inverted:</p>
-        <ul>
-            <li><b>Standard:</b> Arc sweep calculated at $\theta - 90^\circ$</li>
-            <li><b>Mirrored:</b> Arc sweep calculated at $\theta + 90^\circ$</li>
-        </ul>
+        <h3>Door Flip/Mirror</h3>
+        <p>The <code>mirrored</code> property in the object model inverts the door's arc swing and leaf rotation. This allows users to toggle the opening direction of any door entity via the property inspector.</p>
     </section>
 
     <section id="parametric">
-        <h2>5. Parametric Drafting</h2>
-        <p>The Parametric Panel (found in the Inspector) allows for rapid input via compass directions.</p>
+        <h2>5. Angular Parametric Drafting <span class="tag" style="background:var(--highlight); color: #000;">Enhanced</span></h2>
+        <p>The Angular Parametric tool (found in the Addons menu) generates geometry from text-based commands using the format: <code>Angle-Distance-Type</code>.</p>
+        
+        <div class="info-box">
+            <b>New Feature: Angle Reference Modes</b><br>
+            Users can now toggle between two coordinate reference modes for geometric generation:
+            <ul>
+                <li><b>Relative Mode (Default):</b> Each input angle is an offset added to the heading of the previous line segment.</li>
+                <li><b>Absolute Mode:</b> Each input angle refers to the global coordinate system (0° is East/Horizontal).</li>
+            </ul>
+        </div>
+
         <table>
-            <tr><th>Command</th><th>Effect</th><th>Axis</th></tr>
-            <tr><td><code>N</code></td><td>Subtract from Y</td><td>North</td></tr>
-            <tr><td><code>S</code></td><td>Add to Y</td><td>South</td></tr>
-            <tr><td><code>E</code></td><td>Add to X</td><td>East</td></tr>
-            <tr><td><code>W</code></td><td>Subtract from X</td><td>West</td></tr>
+            <tr><th>Suffix</th><th>Entity Type Created</th></tr>
+            <tr><td>(none)</td><td>Standard Line</td></tr>
+            <tr><td><code>w</code></td><td>Architectural Window</td></tr>
+            <tr><td><code>d</code></td><td>Standard Swing Door</td></tr>
         </table>
-        <p>Example: <code>N200</code> draws a line 200 units Up from the last point.</p>
+        <p>Example: <code>90-400-w</code> draws a 400-unit window perpendicular to the current heading (in Relative) or straight North (in Absolute).</p>
     </section>
 
     <section id="export">
         <h2>6. Export Engine</h2>
-        <p>TinyCAD uses a <b>Boundary-Aware Export</b> logic. Instead of capturing the screen, it calculates the <i>Axis-Aligned Bounding Box (AABB)</i> of your drawing and crops the output accordingly.</p>
+        <p>TinyCAD calculates the <i>Axis-Aligned Bounding Box (AABB)</i> of the drawing to ensure exported files contain all geometry without excess whitespace.</p>
         
-        <div class="info-box">
-            <b>DXF Inversion:</b> Note that DXF exports automatically invert the Y-axis. This is to ensure compatibility with AutoCAD's Cartesian system where "Up" is positive Y.
-        </div>
+        <ul>
+            <li><b>SVG/PNG:</b> Visual formats for documentation.</li>
+            <li><b>DXF:</b> Industry-standard vector format. Note that the Y-axis is inverted to match standard Cartesian CAD systems.</li>
+            <li><b>JSON:</b> Full project state for backup and re-import.</li>
+        </ul>
     </section>
 
     <section id="shortcuts">
         <h2>7. Shortcuts Reference</h2>
         <table>
             <tr><td><code>L</code></td><td>Line Tool</td></tr>
-            <tr><td><code>V</code></td><td>Selection Tool</td></tr>
+            <tr><td><code>V</code></td><td>Selection/Move Tool</td></tr>
             <tr><td><code>W</code></td><td>Window Tool</td></tr>
             <tr><td><code>D</code></td><td>Door Tool</td></tr>
-            <tr><td><code>Shift</code></td><td>Ortho-Lock (Straight Lines)</td></tr>
-            <tr><td><code>Del</code></td><td>Delete Selected</td></tr>
+            <tr><td><code>Shift</code></td><td>Ortho-Lock (Horizontal/Vertical)</td></tr>
+            <tr><td><code>Del</code></td><td>Delete Selected Entity</td></tr>
         </table>
     </section>
 
     <footer style="margin-top: 100px; color: var(--text-dim); font-size: 0.8rem; text-align: center;">
-        TinyCAD V12.1
+        TinyCAD V2.1 Technical Documentation
     </footer>
 </main>
 
 <script>
-    // Smooth scroll for nav links
     document.querySelectorAll('nav a').forEach(anchor => {
         anchor.addEventListener('click', function(e) {
             e.preventDefault();
