@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title>TinyCAD Web - V12.1</title>
+    <title>TinyCAD Web - V2.1</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
@@ -25,6 +25,12 @@
           <div onclick="changeUnit('in')">Inches (in)</div>
         </div>
       </div>
+	  <div class="dropdown">
+  <button class="dropbtn">Addons</button>
+  <div class="dropdown-content">
+    <div onclick="showAddon('angular')">Angular Parametric</div>
+  </div>
+</div>
       <div class="dropdown">
         <button class="dropbtn">Support</button>
         <div class="dropdown-content">
@@ -34,6 +40,7 @@
           </a>
         </div>
       </div>
+	  
     </div>
     <div id="main-container">
       <div id="toolbar-left">
@@ -54,15 +61,22 @@
         <div id="inspector-content">
           <div class="empty-state">Select a line to view <br>and edit properties </div>
         </div>
-        <div class="accordion-container">
-          <h4 onclick="toggleParametric()" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:#383838; padding:8px; border-radius:4px;"> Parametric Generation <span id="para-chevron">▶</span>
-          </h4>
-          <div id="para-content" style="display:none; padding-top:10px;">
-            <label style="font-size:10px; margin-bottom:10px; display:block; color:#888;"> Draw a calibration line first, then enter commands below. Parametric drawing will start from the end point of last drawn line. <br> ⬆️ = N | U <br> ⬇️ = S | D <br> ➡️ = E | R <br> ⬅️ = W | L </label>
-            <textarea id="para-input" style="width:100%; height:120px; background:#111; color:#0f0; border:1px solid #27ae60; font-family:monospace; margin-bottom:10px;" placeholder="N100&#10;E50&#10;S100&#10;W50"></textarea>
-            <button onclick="processParametricToJSON()" style="width:100%; padding:10px; background:#27ae60; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;"> Generate drawing </button>
-          </div>
-        </div>
+<div id="angular-addon" style="display:none; padding:10px; border-bottom:1px solid #444;">
+  <h4 style="margin:0 0 10px 0; color:var(--accent);">Angular Parametric</h4>
+  <textarea id="ang-para-input" style="width:100%; height:100px; background:#111; color:#3498db; border:1px solid #444;" placeholder="0-600&#10;90-400-d"></textarea>
+  
+  <div style="margin:5px 0; font-size:12px; display: flex; align-items: center; gap: 5px;">
+    <input type="checkbox" id="abs-ang" onchange="if(document.getElementById('live-ang').checked) processAngularParametric(true)"> 
+    <label for="abs-ang">Use Absolute Angles</label>
+  </div>
+  <div style="margin:5px 0; font-size:12px;">
+<label>
+  <input type="checkbox" checked id="live-ang" onchange="toggleLive('angular')">
+  Live Update
+</label>
+  </div>
+  <button id="btn-ang" onclick="processAngularParametric()" style="width:100%; padding:8px; background:var(--accent); color:white; border:none; cursor:pointer;">Generate</button>
+</div>
       </div>
     </div>
     <div id="status-bar">
